@@ -1,0 +1,61 @@
+- hosts: monitoring
+  become: true
+  tasks:
+    - name: Build Prometheus image
+      community.docker.docker_image:
+        build:
+          path: ../base-images/prometheus
+        name: prometheus-custom
+        tag: latest
+
+    - name: Build Node Exporter image
+      community.docker.docker_image:
+        build:
+          path: ../base-images/node_exporter
+        name: node-exporter-custom
+        tag: latest
+
+    - name: Build Grafana image
+      community.docker.docker_image:
+        build:
+          path: ../base-images/grafana
+        name: grafana-custom
+        tag: latest
+
+    - name: Build microservice image
+      community.docker.docker_image:
+        build:
+          path: ../microservice
+        name: microservice-custom
+        tag: latest
+
+    - name: Run microservice container
+      community.docker.docker_container:
+        name: microservice
+        image: microservice-custom:latest
+        state: started
+        published_ports: 5000:5000
+
+    - name: Run Prometheus container
+      community.docker.docker_container:
+        name: prometheus
+        image: prometheus-custom:latest
+        state: started
+        published_ports: 9090:9090
+        volumes:
+          - /tmp/prometheus.yml:/prometheus/prometheus.yml:ro
+
+    - name: Run Node Exporter
+      community.docker.docker_container:
+        name: node_exporter
+        image: node-exporter-custom:latest
+        state: started
+        published_ports: 9100:9100
+        pid_mode: host
+
+    - name: Run Grafana
+      community.docker.docker_container:
+        name: grafana
+        image: grafana-custom:latest
+        state: started
+        published_ports: 3000:3000
